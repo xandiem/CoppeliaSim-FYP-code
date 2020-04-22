@@ -23,7 +23,6 @@ def get_transform_matrix(x, y, z, angle):
     return (translate_matrix * rotate_matrix).flatten().tolist()[0]
 
 
-
 #
 # Generic Handle
 #
@@ -83,12 +82,12 @@ class YouBot(CoppeliaHandle):
 
     def set_velocity(self, forwBackVel, leftRightVel, rotVel):
 	
-        wheel_radius = 47.5/(1000*2)       	
-        #self.c.set_joint_target_velocity(self.wheel1, -forwBackVel-leftRightVel-rotVel)*wheel_radius)
-        #self.c.set_joint_target_velocity(self.wheel2, -forwBackVel+leftRightVel-rotVel)*wheel_radius)
-        #self.c.set_joint_target_velocity(self.wheel3, -forwBackVel-leftRightVel+rotVel)*wheel_radius)
-        #self.c.set_joint_target_velocity(self.wheel4, -forwBackVel+leftRightVel+rotVel)*wheel_radius)
-	
+        wheel_radius = 47.5/(1000*2)
+        #perimeter = wheel_radius * 2pi       	
+        #velocity in M/s
+	#v= angular vel * radius
+	#angular vel
+		
         self.c.set_joint_target_velocity(self.wheel1, -forwBackVel-leftRightVel-rotVel)
         self.c.set_joint_target_velocity(self.wheel2, -forwBackVel+leftRightVel-rotVel)
         self.c.set_joint_target_velocity(self.wheel3, -forwBackVel-leftRightVel+rotVel)
