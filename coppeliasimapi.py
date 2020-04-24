@@ -81,17 +81,16 @@ class YouBot(CoppeliaHandle):
         return 0., -1.57, 0.
 
     def set_velocity(self, forwBackVel, leftRightVel, rotVel):
-	
-        wheel_radius = 47.5/(1000*2)
-        #perimeter = wheel_radius * 2pi       	
+        wheel_radius = 47.5/(1000*2)      	
         #velocity in M/s
-	#v= angular vel * radius
-	#angular vel
-		
+        forwBackVel /= wheel_radius
+        leftRightVel /= wheel_radius
+        rotVel /= wheel_radius
         self.c.set_joint_target_velocity(self.wheel1, -forwBackVel-leftRightVel-rotVel)
         self.c.set_joint_target_velocity(self.wheel2, -forwBackVel+leftRightVel-rotVel)
         self.c.set_joint_target_velocity(self.wheel3, -forwBackVel-leftRightVel+rotVel)
         self.c.set_joint_target_velocity(self.wheel4, -forwBackVel+leftRightVel+rotVel)
+	
 	#move wheel in m/s	
 	 # Converts to M from mm, *2 as radius diameter/2
 	#angular_velocity = forwBackVel/wheel_radius
@@ -218,6 +217,7 @@ class CoppeliaSimAPI(object):
         child = self.get_objects_children(wall_handle, 'sim.object_shape_type')[0]
         # print('Got child wall handle {}.'.format(child))
         self.scale_object(child, 6.749*length, 0.12, 1.5)
+        self.scale_object(wall_handle, 6.749*length, 0.12, 1.5)
         return Wall(self, wall_handle)
 
 
