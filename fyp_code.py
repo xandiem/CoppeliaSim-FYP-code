@@ -2,7 +2,7 @@ import time
 from random import randint, uniform
 import random
 import pygame
-from coppeliasimapi import CoppeliaSimAPI, YouBot
+from coppeliasimapi import CoppeliaSimAPI, YouBot, PointPair
 from math import pi
 import threading
 import os
@@ -69,24 +69,7 @@ class RoomGenerator:
 		self.room_points.append((-value1/2, MAX_Y))
 		self.room_points.append((-value1/2, MAX_Y-value2))
 		self.room_points.append((value1/2, MAX_Y-value2))
-		print(self.room_points[0])
-		print(self.room_points[1])
-		print(self.room_points[2])
-		print(self.room_points[3])
 	
-	#call set robot to put robot in the room
-		json_dictionary.update({
-			"scenario":{
-               		'points': [(value1/2, MAX_Y),
-                	 	(-value1/2, MAX_Y),
-                	    	(-value1/2, MAX_Y-value2),
-                	    	(value1/2, MAX_Y-value2)],
-			"robot_pose": coppelia.get_object_pose('youBot'),
-			"robot_pos" : coppelia.get_object_position('youBot'),
-			"human1_position": coppelia.get_object_position('Bill#0'),
-			"human2_position": coppelia.get_object_position('Bill#1')
-			}
-       		})
 	#Generate T Room
 	def t_room_generation(self):
 	#generate random to insert into the shape generation
@@ -96,7 +79,7 @@ class RoomGenerator:
 		top_left = coppelia.create_wall([-value1/2, MAX_Y, HEIGHT],
 					[-value1/2, MAX_Y-(value1/2), HEIGHT])
 		top_right = coppelia.create_wall([value1/2, MAX_Y, HEIGHT],
-					[value1/2,2-(value1/2), HEIGHT])
+					[value1/2, MAX_Y-(value1/2), HEIGHT])
 		middle_left = coppelia.create_wall([-value1/2, MAX_Y-(value1/2), HEIGHT],
 					[-value1/2+(value1/3), MAX_Y-value1/2, HEIGHT])
 		middle_right = coppelia.create_wall([value1/2-value1/3, MAX_Y-value1/2, 					HEIGHT],[value1/2,MAX_Y-(value1/2), HEIGHT])
@@ -113,31 +96,7 @@ class RoomGenerator:
 		self.room_points.append((value1/2-value1/3, MAX_Y-value1))
 		self.room_points.append((value1/2-value1/3, MAX_Y-value1/2))
 		self.room_points.append((value1/2, MAX_Y-value1/2))
-		print(self.room_points[0])
-		print(self.room_points[1])
-		print(self.room_points[2])
-		print(self.room_points[3])
-		print(self.room_points[4])
-		print(self.room_points[5])
-		print(self.room_points[6])
-		print(self.room_points[7])
-
-		json_dictionary.update({
-			"scenario":{
-               		'points':[(value1/2, MAX_Y),
-				(-value1/2, MAX_Y),
-                	  	(-value1/2, MAX_Y-value1/2),
-                	   	(-value1/2+(value1/3), MAX_Y-value1/2),
-                	    	(-value1/2+value1/3, MAX_Y-value1),
-                	    	(value1/2-value1/3, MAX_Y-value1),
-                	    	(value1/2-value1/3, MAX_Y-value1/2),
-                	    	(value1/2, MAX_Y-value1/2)],
-			"robot_pose": coppelia.get_object_pose('youBot'),
-			"robot_pos" : coppelia.get_object_position('youBot'),
-			"human1_position": coppelia.get_object_position('Bill#0'),
-			"human2_position": coppelia.get_object_position('Bill#1')
-			}
-        	})
+		
 	#Generates l-room
 	def l_room_generation(self):
 		#generate random to insert into the shape generation
@@ -161,90 +120,53 @@ class RoomGenerator:
 		self.room_points.append((-value1/4 + value1, MAX_Y-value1))
 		self.room_points.append((-value1/4+value1, MAX_Y-value1/2))
 		self.room_points.append((value1/4, MAX_Y-value1/2))
-		print(self.room_points[0])
-		print(self.room_points[1])
-		print(self.room_points[2])
-		print(self.room_points[3])
-		print(self.room_points[4])
-		print(self.room_points[5])
-	
-		json_dictionary.update({
+	def selectRoomAtRandom(self):
+		#Select the room generated at random
+		random_value = randint(1,3)
+		if random_value == 1:
+			self.rectangular_room_generation()
+		elif random_value == 2:
+			self.t_room_generation()
+		else:
+			self.l_room_generation()
+		
+def storeToJson():
+	points = room_generator.room_points
+	json_dictionary.update({
 			"scenario":{
-        	        'points': [(value1/4, MAX_Y),
-        	       		(-value1/4, MAX_Y),
-        	            	(-value1/4, MAX_Y-value1),
-        	            	(-value1/4 + value1, MAX_Y-value1),
-        	            	(-value1/4+value1, MAX_Y-value1/2),
-        	            	(value1/4, MAX_Y-value1/2)],
+               		'points': points,
 			"robot_pose": coppelia.get_object_pose('youBot'),
 			"robot_pos" : coppelia.get_object_position('youBot'),
 			"human1_position": coppelia.get_object_position('Bill#0'),
-			"human2_position": coppelia.get_object_position('Bill#1')	
+			"human2_position": coppelia.get_object_position('Bill#1')
 			}
-        	})
-def moveHumanCircles(incrementer, human):
-	min_coordinates = room_generator.minimum_x_coordinates()
-	min_x = min_coordinates[0]
-	max_coordinates = room_generator.maximum_x_coordinates()
-	max_x = max_coordinates[0]
-	min_y = room_generator.minimum_y_coordinates()
-	min_y = min_y[1]
-	coord_1 = (0, MAX_Y-0.2, 0)
-	coord_2 = (min_x/4, MAX_Y/2, 0)
-	coord_3 = (min_x-0.5, MAX_Y/4, 0)
-	coord_4 = (min_x/2, 0, 0)
-	coord_5 = (min_x/4, min_y/4, 0)
-	coord_6 = (min_x/8, min_y/2, 0)
-	coord_7 = (0, min_y, 0)
-	coord_8 = (max_x/8, min_y/2, 0)
-	coord_9 = (max_x/4, min_y/4, 0)
-	coord_10 =(max_x/2, min_y/8, 0)
-	if incrementer == 1:
-		human.move(coord_1[0], coord_1[1], coord_1[2])
-	elif incrementer == 2:
-		human.move(coord_2[0], coord_2[1], coord_2[2])
-	elif incrementer == 3:
-		human.move(coord_3[0], coord_3[1], coord_3[2])
-	elif incrementer == 4:
-		human.move(coord_4[0], coord_4[1], coord_4[2])
-	elif incrementer == 5:
-		human.move(coord_5[0], coord_5[1], coord_5[2])
-	elif incrementer == 6:
-		human.move(coord_6[0], coord_6[1], coord_6[2])
-	elif incrementer == 7:
-		human.move(coord_7[0], coord_7[1], coord_7[2])
-	else:
-		human.move(coord_8[0], coord_8[1], coord_8[2])
-	
-def moveHumanForwardAndBackward(human, target_val):
-	#move forward
-	coord_1 = (2,0,0)
-	coord_2 = (-2,0,0)
-	if target_val == 1:
-		human.move(coord_1[0], coord_1[1], coord_1[2])
-	if target_val == 2:
-		human.move(coord_2[0], coord_2[1], coord_2[2])
-	#move backward
+       		})
 
 #def humanSitToStand():
 
 #Select type of people generated
-a = coppelia.create_human(1, 0, 0, 0)
-b = coppelia.create_human(-1, 0, 0, 0)
-incrementer_a = randint(1,8)
-incrementer_b = randint(1,8)
-c = coppelia.create_human(0, -1, 0, 0)
+a = coppelia.create_human(-1, 0, 0, 0)
+b = coppelia.create_human(1, 0, 0, 0)
 
-#Select the room generated at random
-random_value = randint(1,3)
+#create room_gen instance
 room_generator = RoomGenerator()
-if random_value == 1:
-	room_generator.rectangular_room_generation()
-elif random_value == 2:
-	room_generator.t_room_generation()
-else:
-	room_generator.l_room_generation()
-room_generator.minimum_x_coordinate()
+#sets the points of the room gen at random
+room_generator.selectRoomAtRandom()
+#store initial values to json
+storeToJson()
+int_1 = 0
+point_pairs = []
+for points in room_generator.room_points:
+	if int_1 < len(room_generator.room_points)-1:
+		point_pair = PointPair(points, room_generator.room_points[int_1+1])
+		point_pairs.append(point_pair)
+	elif int_1 == len(room_generator.room_points)-1:
+		point_pair = PointPair(points, room_generator.room_points[0])
+		point_pairs.append(point_pair)
+	int_1 += 1
+
+for pairs in point_pairs:
+	pairs.printPoints()
 # Start the simulation
 coppelia.run_script('sim.setBoolParameter(sim.boolparam_realtime_simulation,true)')
 coppelia.start()
@@ -256,29 +178,15 @@ updates = []
 timestamp = 0
 value = 1
 name = 'data.json'
-incre_value = 1
+human_path = a.setPath(point_pairs)
+
 # Loop
 while True:
     # EVERY 5 seconds
 	if time.time() - last_5_seconds > 5:
 		last_5_seconds = time.time()
-		moveHumanCircles(incrementer_a, a)
-		moveHumanCircles(incrementer_b, b)
-		if incrementer_a == 8:
-			incrementer_a = 1
-		else:
-			incrementer_a += 1
-		if incrementer_b == 8:
-			incrementer_b = 1
-		else:
-			incrementer_b += 1
-		moveHumanForwardAndBackward(c, incrementer_a)
-		if incre_value == 1:
-			incre_value += 1
-		else:
-			incre_value = 1
-		print("value of increment a: " + str(incrementer_a))
-		print("value of increment b: " + str(incrementer_b))
+		a.getNextPoint(human_path)
+		#a.moveCircles(room_generator.room_points)
     # EVERY 0.01 seconds
 	if time.time() - last_point_zero_one > 0.01:
 		last_point_zero_one = time.time()

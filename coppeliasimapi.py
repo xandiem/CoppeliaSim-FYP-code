@@ -39,6 +39,89 @@ class Wall(CoppeliaHandle):
     def __init__(self, coppelia, handle):
         super(Wall, self).__init__(coppelia, handle)
 
+class PointPair:
+    point_1 = (0, 0, 0)
+    point_2 = (0, 0, 0)
+    def __init__(self, point_1, point_2):
+        self.point_1 = point_1
+        self.point_2 = point_2
+        
+    def isParallel(self, point_pair):
+        return self.isHorizontal() == point_pair.isHorizontal()
+           
+    def isHorizontal(self):
+       return self.point_1[1] == self.point_2[1]
+       
+    def getXMax(self):
+        if self.point_1[0] > self.point_2[0]:
+            return self.point_1[0]
+        else:
+            return self.point_2[0]
+    def getXMin(self):
+        if self.point_1[0] < self.point_2[0]:
+            return self.point_1[0]
+        else:
+            return self.point_2[0]  
+            
+    def getYMax(self):
+        if self.point_1[1] > self.point_2[1]:
+            return self.point_1[1]
+        else:
+            return self.point_2[1]  
+    
+    def getYMin(self):
+        if self.point_1[1] < self.point_2[1]:
+            return self.point_1[1]
+        else:
+            return self.point_2[1]
+    def printPoints(self):
+        print(self.point_1  , self.point_2)
+                                   
+    def doesOverlap(self, point_pair):
+        if self.isHorizontal():
+            points_pair1 = []
+            points_pair1.append(self.point_1[0])
+            points_pair1.append(self.point_2[0])  
+            pair1_min_x = min(points_pair1)
+            pair1_max_x = max(points_pair1)
+            points_pair2 = []
+            points_pair2.append(point_pair.point_1[0])
+            points_pair2.append(point_pair.point_2[0])  
+            pair2_min_x = min(points_pair2)
+            pair2_max_x = max(points_pair2)
+            if (pair2_min_x > pair1_min_x and pair2_min_x < pair1_max_x):
+                 return True          
+            elif (pair2_max_x < pair1_max_x and pair2_max_x > pair1_min_x):
+                return True
+            elif (pair1_min_x > pair2_min_x and pair1_min_x < pair2_max_x):
+                 return True  
+            elif (pair1_max_x < pair2_max_x and pair1_max_x > pair2_min_x):
+                return True
+            elif (pair2_max_x == pair1_max_x and pair2_min_x == pair1_min_x):
+                return True
+        else:
+            points_pair1 = []
+            points_pair1.append(self.point_1[1])
+            points_pair1.append(self.point_2[1])  
+            pair1_min_y = min(points_pair1)
+            pair1_max_y = max(points_pair1)
+            points_pair2 = []
+            points_pair2.append(point_pair.point_1[1])
+            points_pair2.append(point_pair.point_2[1])  
+            pair2_min_y = min(points_pair2)
+            pair2_max_y = max(points_pair2)
+            if (pair2_min_y > pair1_min_y and pair2_min_y < pair1_max_y):
+                return True          
+            elif (pair2_max_y < pair1_max_y and pair2_max_y > pair1_min_y):
+                return True
+            elif (pair1_min_y > pair2_min_y and pair1_min_y < pair2_max_y):
+                return True  
+            elif (pair1_max_y < pair2_max_y and pair1_max_y > pair2_min_y):
+                return True
+            elif (pair2_max_y == pair1_max_y and pair2_min_y == pair1_min_y):
+                return True
+        return False
+                        
 #
 # Human
 #  
@@ -49,7 +132,97 @@ class Human(CoppeliaHandle):
 
     def move(self, x, y, z):
         self.c.set_object_position(self.dummy_handle, x, y, z)
-
+    
+    def pairsAreEqual(self, point_pair_1, point_pair_2):
+        return point_pair_1.point_1 == point_pair_2.point_1 and point_pair_1.point_2 == point_pair_2.point_2
+           
+    def setPath(self, wall_adapter_list):
+        #room coordinates into pairs of coordinates(walls)
+        #loop over walls
+            #find walls that are parallel
+        path_points = []
+        for wall in wall_adapter_list:
+            for wall_1 in wall_adapter_list:
+                wall.printPoints()
+                wall_1.printPoints()
+                print("walls are equal: " + str(self.pairsAreEqual(wall,wall_1)))
+                print("walls is parallel: " + str(wall.isParallel(wall_1)))
+                print("wall overlaps? " + str(wall.doesOverlap(wall_1)))
+                if (not self.pairsAreEqual(wall, wall_1)) and wall.isParallel(wall_1) and wall.doesOverlap(wall_1):
+                   wall_fixed_coordinate = 0
+                   wall1_fixed_coordinate = 0
+                   if wall.isHorizontal():
+                       wall_fixed_coordinate = wall.point_1[1]
+                       wall1_fixed_coordinate = wall_1.point_1[1]
+                   else:
+                       wall_fixed_coordinate = wall.point_1[0]
+                       wall1_fixed_coordinate = wall_1.point_1[0]   
+                   wall_1_greater_than = wall1_fixed_coordinate > wall_fixed_coordinate  
+                   if wall_1_greater_than:
+                       if wall.isHorizontal():
+                           path_points.append((wall.getXMin()+1, wall.point_1[1] + 1))
+                           path_points.append((wall.getXMax()-1, wall.point_1[1] + 1))
+                       else:
+                           path_points.append((wall.point_1[0] +1, wall.getYMin() + 1))
+                           path_points.append((wall.point_1[0] +1, wall.getYMax() - 1))
+                   else:
+                       if wall.isHorizontal():
+                           path_points.append((wall.getXMin()+1, wall.point_1[1] - 1))
+                           path_points.append((wall.getXMax()-1, wall.point_1[1] - 1))
+                       else:
+                           path_points.append((wall.point_1[0] -1, wall.getYMin() + 1))
+                           path_points.append((wall.point_1[0] -1, wall.getYMax() - 1))
+        points_list_no_dupes = list(dict.fromkeys(path_points))
+        sorted_points = sorted(points_list_no_dupes , key=lambda k: [k[0]])
+        return sorted_points
+    
+    def setNextPointOnPath(self, path_points):
+	#gets target pos
+        curr_pos = self.c.get_object_position(self.dummy_handle)
+        curr_pos_array = np.array((curr_pos[0], curr_pos[1], curr_pos[2]))
+        value = 0
+        new_coords = (0, 0)
+        print(path_points)
+        for points in path_points:
+            coordinates = (points[0], points[1], 0)
+            distance_to_target = np.linalg.norm(curr_pos_array-coordinates)
+	    #compare target to points
+            print("distance is: " + str(distance_to_target))
+            if distance_to_target < 0.4:
+                print("value is: " + str(value))
+                print("lenght of path_points: " + str(len(path_points)))
+                print(value == (len(path_points)-1))
+                if (value == (len(path_points)-1)):
+                    print("Inside if")
+                    new_coords = path_points[0]
+                    break
+                elif (value < len(path_points)-1):
+                    print("INSide elif")
+                    new_coords = path_points[value+1]
+                    break
+            else:
+                new_coords = path_points[0]
+            value += 1
+        position_target = self.c.set_object_position(self.dummy_handle, new_coords[0], new_coords[1], 0)   
+                         
+    def getNextPoint(self, path_points):
+       	#make sure human is at the curr target pos
+       	#loop and check if human pos is within range
+        for points in path_points:
+            position_human = self.c.get_object_position(self.handle)
+            human_pos = np.array((position_human[0], position_human[1], position_human[2]))
+            position_target = np.array((self.c.get_object_position(self.dummy_handle)))
+            distance_to_target = np.linalg.norm(position_target-human_pos)
+            #0.3 to ensure no bugs
+            if(distance_to_target < 0.3):
+                self.setNextPointOnPath(path_points)
+                break
+    
+    def moveForwardAndBackwards(self):
+        return
+        #set first point to be between the highest and lowest y coordinates
+        #small delay in between reaching the target then back
+        
 #
 # YouBot
 #
@@ -81,7 +254,7 @@ class YouBot(CoppeliaHandle):
         return 0., -1.57, 0.
 
     def set_velocity(self, forwBackVel, leftRightVel, rotVel):
-        wheel_radius = 47.5/(1000*2)      	
+        """wheel_radius = 47.5/(1000*2)      	
         #velocity in M/s
         forwBackVel /= wheel_radius
         leftRightVel /= wheel_radius
@@ -90,29 +263,11 @@ class YouBot(CoppeliaHandle):
         self.c.set_joint_target_velocity(self.wheel2, -forwBackVel+leftRightVel-rotVel)
         self.c.set_joint_target_velocity(self.wheel3, -forwBackVel-leftRightVel+rotVel)
         self.c.set_joint_target_velocity(self.wheel4, -forwBackVel+leftRightVel+rotVel)
-	
-	#move wheel in m/s	
-	 # Converts to M from mm, *2 as radius diameter/2
-	#angular_velocity = forwBackVel/wheel_radius
-	#perimeter_wheel = 2pi*radius
-	
-	
-	
-
-        # print('VELS:', forwBackVel, leftRightVel, rotVel)
-        # code = """
-        # sim.setJointTargetVelocity({}, {}) and
-        # sim.setJointTargetVelocity({}, {}) and
-        # sim.setJointTargetVelocity({}, {}) and
-        # sim.setJointTargetVelocity({}, {})
-        # """.format(
-        #     self.wheel1, -forwBackVel-leftRightVel-rotVel,
-        #     self.wheel2, -forwBackVel+leftRightVel-rotVel,
-        #     self.wheel3, -forwBackVel-leftRightVel+rotVel,
-        #     self.wheel4, -forwBackVel+leftRightVel+rotVel)
-        # print('CODE:', code)
-        # print(self.c.run_script(code))
-
+        """
+        self.c.set_joint_target_velocity(self.wheel1, -forwBackVel-leftRightVel-rotVel)
+        self.c.set_joint_target_velocity(self.wheel2, -forwBackVel+leftRightVel-rotVel)
+        self.c.set_joint_target_velocity(self.wheel3, -forwBackVel-leftRightVel+rotVel)
+        self.c.set_joint_target_velocity(self.wheel4, -forwBackVel+leftRightVel+rotVel)
 
 #
 # Pioneer_p3dx
