@@ -5,6 +5,7 @@ import sys
 import signal
 import numpy as np
 from math import cos, sin, atan2, pi
+from random import randint
 from os import path
 import time
 
@@ -74,8 +75,6 @@ class PointPair:
             return self.point_1[1]
         else:
             return self.point_2[1]
-    def printPoints(self):
-        print(self.point_1  , self.point_2)
                                    
     def doesOverlap(self, point_pair):
         if self.isHorizontal():
@@ -121,6 +120,7 @@ class PointPair:
             elif (pair2_max_y == pair1_max_y and pair2_min_y == pair1_min_y):
                 return True
         return False
+
                         
 #
 # Human
@@ -143,11 +143,6 @@ class Human(CoppeliaHandle):
         path_points = []
         for wall in wall_adapter_list:
             for wall_1 in wall_adapter_list:
-                wall.printPoints()
-                wall_1.printPoints()
-                print("walls are equal: " + str(self.pairsAreEqual(wall,wall_1)))
-                print("walls is parallel: " + str(wall.isParallel(wall_1)))
-                print("wall overlaps? " + str(wall.doesOverlap(wall_1)))
                 if (not self.pairsAreEqual(wall, wall_1)) and wall.isParallel(wall_1) and wall.doesOverlap(wall_1):
                    wall_fixed_coordinate = 0
                    wall1_fixed_coordinate = 0
@@ -182,22 +177,15 @@ class Human(CoppeliaHandle):
         curr_pos_array = np.array((curr_pos[0], curr_pos[1], curr_pos[2]))
         value = 0
         new_coords = (0, 0)
-        print(path_points)
         for points in path_points:
             coordinates = (points[0], points[1], 0)
             distance_to_target = np.linalg.norm(curr_pos_array-coordinates)
 	    #compare target to points
-            print("distance is: " + str(distance_to_target))
-            if distance_to_target < 0.4:
-                print("value is: " + str(value))
-                print("lenght of path_points: " + str(len(path_points)))
-                print(value == (len(path_points)-1))
+            if distance_to_target < 0.3:
                 if (value == (len(path_points)-1)):
-                    print("Inside if")
                     new_coords = path_points[0]
                     break
                 elif (value < len(path_points)-1):
-                    print("INSide elif")
                     new_coords = path_points[value+1]
                     break
             else:
@@ -218,8 +206,31 @@ class Human(CoppeliaHandle):
                 self.setNextPointOnPath(path_points)
                 break
     
-    def moveForwardAndBackwards(self):
-        return
+    def moveForwardAndBackwards(self, points):
+        #takes 2 different points
+        coords_1 = points[0]
+        coords_1 = np.array((coords_1[0], coords_1[1], 0))
+        coords_2 = points[1]
+        coords_2 = np.array((coords_2[0], coords_2[1], 0))
+        position_human = self.c.get_object_position(self.handle)
+        human_pos = np.array((position_human[0], position_human[1], position_human[2]))
+        position_target = np.array((self.c.get_object_position(self.dummy_handle)))
+        distance_to_target = np.linalg.norm(position_target-human_pos)
+        from_coords_1_to_target = np.linalg.norm(position_target-coords_1)
+        from_coords_2_to_target = np.linalg.norm(position_target-coords_2)
+        if distance_to_target < 0.3:
+            if from_coords_1_to_target < 0.2:
+                self.c.set_object_position(self.dummy_handle, coords_2[0], coords_2[1], 0)  
+            else:
+                self.c.set_object_position(self.dummy_handle, coords_1[0], coords_1[1], 0)
+
+    def selectPointsAtRandom(self, path_points):
+        for points in path_points:
+            rand_1 = randint(0, len(path_points)-1)
+            rand_2 = randint(0, len(path_points)-1)
+            if not rand_1 == rand_2:
+                return path_points[rand_1], path_points[rand_2]
+                break
         #set first point to be between the highest and lowest y coordinates
         #small delay in between reaching the target then back
         

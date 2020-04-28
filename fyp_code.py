@@ -15,7 +15,7 @@ pygame.joystick.init()
 pygame.joystick.Joystick(0).init()
 #find the models from coppelia
 coppelia = CoppeliaSimAPI(['./scenes/'])
-#ensure coppelia is not running, then start
+#ensure coppelia is not running
 coppelia.stop()
 coppelia.close()
 #scene constants
@@ -27,13 +27,11 @@ coppelia.load_scene('dataset.ttt')
 #Access scene children
 children = coppelia.get_objects_children('sim.handle_scene', children_type='sim.all_type', filter_children=1+2)
 for child in children:
-    name = coppelia.get_object_name(child)
+	name = coppelia.get_object_name(child)
     # Get the youbot that is already available in the scene
-    if name == 'youBot':
-        youbot = YouBot(coppelia, child)
-        print('YouBot\'s handle:', youbot)
+	if name == 'youBot':
+		youbot = YouBot(coppelia, child)	
 floor = coppelia.get_object_handle('ResizableFloor_5_25')
-print('ret:', floor)
 
 class RoomGenerator:
 	def __init__(self):
@@ -51,6 +49,7 @@ class RoomGenerator:
 		minimum_y = min(self.room_points)[1]
 		return minimum_y
 	
+	#Generate rectangular room
 	def rectangular_room_generation(self):
 		#generate random to insert into the shape generation		
 		value1 = randint(60,100)/10		
@@ -120,6 +119,8 @@ class RoomGenerator:
 		self.room_points.append((-value1/4 + value1, MAX_Y-value1))
 		self.room_points.append((-value1/4+value1, MAX_Y-value1/2))
 		self.room_points.append((value1/4, MAX_Y-value1/2))
+
+	#method to select the room to be generated
 	def selectRoomAtRandom(self):
 		#Select the room generated at random
 		random_value = randint(1,3)
@@ -129,7 +130,8 @@ class RoomGenerator:
 			self.t_room_generation()
 		else:
 			self.l_room_generation()
-		
+
+#store key features to JSON		
 def storeToJson():
 	points = room_generator.room_points
 	json_dictionary.update({
@@ -142,52 +144,60 @@ def storeToJson():
 			}
        		})
 
-#def humanSitToStand():
-
+#sets up point pairs for use in setting room points
+def populatePointPairs(room_points):
+	point_pairs = []
+	int_1 = 0
+	for points in room_points:
+		if int_1 < len(room_points)-1:
+			point_pair = PointPair(points, room_points[int_1+1])
+			point_pairs.append(point_pair)
+		elif int_1 == len(room_points)-1:
+			point_pair = PointPair(points, room_points[0])
+			point_pairs.append(point_pair)
+		int_1 += 1
+	return point_pairs
+	
 #Select type of people generated
 a = coppelia.create_human(-1, 0, 0, 0)
-b = coppelia.create_human(1, 0, 0, 0)
+b = coppelia.create_human(0, 0, 0, 0)
 
 #create room_gen instance
 room_generator = RoomGenerator()
 #sets the points of the room gen at random
 room_generator.selectRoomAtRandom()
+#sets the human coordinates for movement
+point_pairs = populatePointPairs(room_generator.room_points)
+human_path = a.setPath(point_pairs)
+
+values = b.selectPointsAtRandom(human_path)
+print(values)
 #store initial values to json
 storeToJson()
-int_1 = 0
-point_pairs = []
-for points in room_generator.room_points:
-	if int_1 < len(room_generator.room_points)-1:
-		point_pair = PointPair(points, room_generator.room_points[int_1+1])
-		point_pairs.append(point_pair)
-	elif int_1 == len(room_generator.room_points)-1:
-		point_pair = PointPair(points, room_generator.room_points[0])
-		point_pairs.append(point_pair)
-	int_1 += 1
 
-for pairs in point_pairs:
-	pairs.printPoints()
 # Start the simulation
 coppelia.run_script('sim.setBoolParameter(sim.boolparam_realtime_simulation,true)')
 coppelia.start()
 coppelia.run_script('sim.setBoolParameter(sim.boolparam_realtime_simulation,true)')
-	
+
+last_10_seconds = time.time()-10	
 last_5_seconds = time.time()-10
 last_point_zero_one = time.time()-10
 updates = []
 timestamp = 0
 value = 1
 name = 'data.json'
-human_path = a.setPath(point_pairs)
 
 # Loop
 while True:
-    # EVERY 5 seconds
+	# EVERY 5 seconds
+	if time.time() - last_10_seconds > 10:
+		last_10_seconds = time.time()
+		b.moveForwardAndBackwards(values)
 	if time.time() - last_5_seconds > 5:
 		last_5_seconds = time.time()
 		a.getNextPoint(human_path)
-		#a.moveCircles(room_generator.room_points)
-    # EVERY 0.01 seconds
+	# EVERY 0.01 seconds
 	if time.time() - last_point_zero_one > 0.01:
 		last_point_zero_one = time.time()
 		pygame.event.pump()
