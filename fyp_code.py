@@ -157,10 +157,30 @@ def populatePointPairs(room_points):
 			point_pairs.append(point_pair)
 		int_1 += 1
 	return point_pairs
-	
-#Select type of people generated
-a = coppelia.create_human(-1, 0, 0, 0)
-b = coppelia.create_human(0, 0, 0, 0)
+
+#Randomly create a group of people
+def createScenePeople():
+	min = 0
+	max = 9
+	forward_backward_list = []
+	around_room_list = []
+	rand_num = randint(min, max)
+	if rand_num > 0:
+		for x in range(rand_num):
+			print(x)
+			rand_val = randint(0,2)
+			if rand_val == 0:
+				human = coppelia.create_human(0,0,0,0)
+				forward_backward_list.append(human)
+				human.setPointsForwardAndBackward(human_path)
+			elif rand_val == 1:
+				human = coppelia.create_human(0,0,0,0)
+				around_room_list.append(human)
+			else:
+				coppelia.create_model('models/people/Walking Bill.ttm')				
+
+		return forward_backward_list, around_room_list	
+			
 
 #create room_gen instance
 room_generator = RoomGenerator()
@@ -168,7 +188,15 @@ room_generator = RoomGenerator()
 room_generator.selectRoomAtRandom()
 #sets the human coordinates for movement
 point_pairs = populatePointPairs(room_generator.room_points)
+#create humans
+a = coppelia.create_human(0.5, 1, 0, 0)
+#get path based on pointpairs
 human_path = a.setPath(point_pairs)
+b = coppelia.create_human(0, 1, 0, 0)
+
+human_lists = createScenePeople()
+forward_backward_list = human_lists[0]
+around_room_list = human_lists[1]
 
 values = b.selectPointsAtRandom(human_path)
 print(values)
@@ -193,10 +221,19 @@ while True:
 	# EVERY 5 seconds
 	if time.time() - last_10_seconds > 10:
 		last_10_seconds = time.time()
-		b.moveForwardAndBackwards(values)
+		#loop through list of forward and backward humans
+		#check if new coordinate needs to be set
+		if forward_backward_list:
+			for human in forward_backward_list:
+				values = human.points
+				human.moveForwardAndBackwards(values)
 	if time.time() - last_5_seconds > 5:
 		last_5_seconds = time.time()
-		a.getNextPoint(human_path)
+		#loop through list of around room humans
+		#check if new coordinate needs to be set
+		if around_room_list:
+			for human in around_room_list:
+				human.getNextPoint(human_path)
 	# EVERY 0.01 seconds
 	if time.time() - last_point_zero_one > 0.01:
 		last_point_zero_one = time.time()

@@ -122,13 +122,13 @@ class PointPair:
         return False
 
                         
-#
 # Human
 #  
 class Human(CoppeliaHandle):
-    def __init__(self, coppelia: 'CoppeliaSimAPI', handle : int):
+    def __init__(self, coppelia: 'CoppeliaSimAPI', handle : int, points):
         super(Human, self).__init__(coppelia, handle)
         self.dummy_handle = coppelia.get_objects_children(handle, 'sim.object_dummy_type')[0]
+        self.points = []
 
     def move(self, x, y, z):
         self.c.set_object_position(self.dummy_handle, x, y, z)
@@ -136,37 +136,37 @@ class Human(CoppeliaHandle):
     def pairsAreEqual(self, point_pair_1, point_pair_2):
         return point_pair_1.point_1 == point_pair_2.point_1 and point_pair_1.point_2 == point_pair_2.point_2
            
-    def setPath(self, wall_adapter_list):
+    def setPath(self, point_pairs_list):
         #room coordinates into pairs of coordinates(walls)
         #loop over walls
             #find walls that are parallel
         path_points = []
-        for wall in wall_adapter_list:
-            for wall_1 in wall_adapter_list:
-                if (not self.pairsAreEqual(wall, wall_1)) and wall.isParallel(wall_1) and wall.doesOverlap(wall_1):
-                   wall_fixed_coordinate = 0
-                   wall1_fixed_coordinate = 0
-                   if wall.isHorizontal():
-                       wall_fixed_coordinate = wall.point_1[1]
-                       wall1_fixed_coordinate = wall_1.point_1[1]
+        for point_pair in point_pairs_list:
+            for point_pair1 in point_pairs_list:
+                if (not self.pairsAreEqual(point_pair, point_pair1)) and point_pair.isParallel(point_pair1) and point_pair.doesOverlap(point_pair1):
+                   point_pair_fixed_coordinate = 0
+                   point_pair1_fixed_coordinate = 0
+                   if point_pair.isHorizontal():
+                       point_pair_fixed_coordinate = point_pair.point_1[1]
+                       point_pair1_fixed_coordinate = point_pair1.point_1[1]
                    else:
-                       wall_fixed_coordinate = wall.point_1[0]
-                       wall1_fixed_coordinate = wall_1.point_1[0]   
-                   wall_1_greater_than = wall1_fixed_coordinate > wall_fixed_coordinate  
-                   if wall_1_greater_than:
-                       if wall.isHorizontal():
-                           path_points.append((wall.getXMin()+1, wall.point_1[1] + 1))
-                           path_points.append((wall.getXMax()-1, wall.point_1[1] + 1))
+                       point_pair_fixed_coordinate = point_pair.point_1[0]
+                       point_pair1_fixed_coordinate = point_pair1.point_1[0]   
+                   point_pair1_greater_than = point_pair1_fixed_coordinate > point_pair_fixed_coordinate  
+                   if point_pair1_greater_than:
+                       if point_pair.isHorizontal():
+                           path_points.append((point_pair.getXMin()+1, point_pair.point_1[1] + 1))
+                           path_points.append((point_pair.getXMax()-1, point_pair.point_1[1] + 1))
                        else:
-                           path_points.append((wall.point_1[0] +1, wall.getYMin() + 1))
-                           path_points.append((wall.point_1[0] +1, wall.getYMax() - 1))
+                           path_points.append((point_pair.point_1[0] +1, point_pair.getYMin() + 1))
+                           path_points.append((point_pair.point_1[0] +1, point_pair.getYMax() - 1))
                    else:
-                       if wall.isHorizontal():
-                           path_points.append((wall.getXMin()+1, wall.point_1[1] - 1))
-                           path_points.append((wall.getXMax()-1, wall.point_1[1] - 1))
+                       if point_pair.isHorizontal():
+                           path_points.append((point_pair.getXMin()+1, point_pair.point_1[1] - 1))
+                           path_points.append((point_pair.getXMax()-1, point_pair.point_1[1] - 1))
                        else:
-                           path_points.append((wall.point_1[0] -1, wall.getYMin() + 1))
-                           path_points.append((wall.point_1[0] -1, wall.getYMax() - 1))
+                           path_points.append((point_pair.point_1[0] -1, point_pair.getYMin() + 1))
+                           path_points.append((point_pair.point_1[0] -1, point_pair.getYMax() - 1))
         points_list_no_dupes = list(dict.fromkeys(path_points))
         sorted_points = sorted(points_list_no_dupes , key=lambda k: [k[0]])
         return sorted_points
@@ -231,6 +231,15 @@ class Human(CoppeliaHandle):
             if not rand_1 == rand_2:
                 return path_points[rand_1], path_points[rand_2]
                 break
+                
+    def setPointsForwardAndBackward(self, path_points):
+        points = self.selectPointsAtRandom(path_points)
+        self.points.append(points)
+        
+    def getPointsForwardAndBackward(self):
+        return self.points   
+        
+
         #set first point to be between the highest and lowest y coordinates
         #small delay in between reaching the target then back
         
@@ -367,7 +376,7 @@ class CoppeliaSimAPI(object):
         model = 'models/people/path planning Bill.ttm'
         human_handle = self.create_model(model, x, y, z, angle)
         # print('Got human handle {}.'.format(human_handle))
-        return Human(self, human_handle)
+        return Human(self, human_handle, points=None)
 
 
     def create_wall(self, p1, p2):
