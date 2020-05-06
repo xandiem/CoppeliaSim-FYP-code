@@ -234,7 +234,8 @@ class Human(CoppeliaHandle):
                 
     def setPointsForwardAndBackward(self, path_points):
         points = self.selectPointsAtRandom(path_points)
-        self.points.append(points)
+        self.points.append(points[0])
+        self.points.append(points[1])
         
     def getPointsForwardAndBackward(self):
         return self.points   
@@ -242,7 +243,10 @@ class Human(CoppeliaHandle):
 
         #set first point to be between the highest and lowest y coordinates
         #small delay in between reaching the target then back
-        
+            
+class RandomHuman(CoppeliaHandle):
+    def __init__(self, coppelia: 'CoppeliaSimAPI', handle : int):
+        super(RandomHuman, self).__init__(coppelia, handle)
 #
 # YouBot
 #
@@ -377,6 +381,11 @@ class CoppeliaSimAPI(object):
         human_handle = self.create_model(model, x, y, z, angle)
         # print('Got human handle {}.'.format(human_handle))
         return Human(self, human_handle, points=None)
+
+    def create_random_human(self, x, y, z, angle):
+        model = 'models/people/Walking Bill.ttm'
+        human_handle = self.create_model(model, x, y, z, angle)
+        return RandomHuman(self, human_handle)
 
 
     def create_wall(self, p1, p2):
