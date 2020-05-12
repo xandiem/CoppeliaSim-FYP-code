@@ -238,8 +238,11 @@ class Human(CoppeliaHandle):
         self.points.append(points[1])
         
     def getPointsForwardAndBackward(self):
-        return self.points   
-        
+        return self.points
+
+    def setDummyPosition(self, x, y, z):
+        self.c.set_object_position(self.dummy_handle, x, y, z)
+     
 
         #set first point to be between the highest and lowest y coordinates
         #small delay in between reaching the target then back

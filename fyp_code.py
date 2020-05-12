@@ -4,6 +4,8 @@ import random
 import pygame
 from coppeliasimapi import CoppeliaSimAPI, YouBot, PointPair
 from math import pi
+import re
+import numpy as np
 import threading
 import os
 import json
@@ -198,7 +200,6 @@ def getRandomPoints(room_points):
 			rand_y = uniform(min_y_coords[1]+0.5, mid_y_coords[1]-0.5)
 			return rand_x, rand_y
 	elif len(room_points) == 8:
-		points = room_points
 		sorted_points_x = sorted(points, key=lambda k: [k[0], k[1]])
 		sorted_points_y = sorted(points, key=lambda k: [k[1], k[0]])
 		min_x_coords = sorted_points_x[0]
@@ -220,17 +221,32 @@ def getRandomPoints(room_points):
 	else:
 		print("room is not rectangular, t-shaped or l-shaped")
 		
+def getHumansDictionary():
+	dict_humans = {}
+	# Regular expression to retrieve Bill, Bill1, etc in the scene
+	pattern = '^Bill[0-9]{0,2}$'
+	children = coppelia.get_objects_children('sim.handle_scene', children_type='sim.all_type', 			filter_children=1+2)
+	for child in children:
+		name = coppelia.get_object_name(child)
+		isHuman = re.findall(pattern, name)
+		if isHuman:
+			pos = coppelia.get_object_position(child)
+			dict_humans[str(name)] = pos
+	if dict_humans:
+		return dict_humans
 
 #store key features to JSON		
-def storeToJson(room_generator_input):
-	points = room_generator_input.room_points
+def storeToJson(room_generator_points, interactions):
+	dict_interaction = interactions
+	points = room_generator_points
+	dict_humans = getHumansDictionary()
 	json_dictionary.update({
 			"scenario":{
                		'points': points,
 			"robot_pose": coppelia.get_object_pose('youBot'),
-			"robot_pos" : coppelia.get_object_position('youBot'),
-			"human1_position": coppelia.get_object_position('Bill#0'),
-			"human2_position": coppelia.get_object_position('Bill#1')
+			"target_position" : coppelia.get_object_position('Cuboid'),
+			"interactions" : dict_interaction,
+			"humans" : dict_humans
 			}
        		})
 
@@ -241,7 +257,6 @@ def populatePointPairs(room_coords):
 	for points in room_coords:
 		if int_1 < len(room_coords)-1:
 			point_pair = PointPair(points, room_coords[int_1+1])
-			print("point_pair: " + str(point_pair))
 			point_pairs.append(point_pair)
 		elif int_1 == len(room_coords)-1:
 			point_pair = PointPair(points, room_coords[0])
@@ -254,59 +269,111 @@ def createScenePeople(path, room_points):
 	min = 0
 	max = 9
 	forward_backward_list = []
-	around_room_list = []
+	following_humans_list = []
+	interactions_dict = {}
 	rand_num = randint(min, max)
 	if rand_num > 0:
+		count = 1
 		for x in range(rand_num):
-			rand_val = randint(0,2)
+			rand_val = randint(0,3)
 			if rand_val == 0:
 				#get start coords and set them
 				points = getRandomPoints(room_points)
 				human = coppelia.create_human(points[0], points[1],0,0)
-				print("human_back_forth: " + str(coppelia.get_object_name(human.handle)))
+				#<0.5 to ensure both x and y inside the room
+				human.setDummyPosition(-0.4, 0.2, 0)
 				forward_backward_list.append(human)
 				human.setPointsForwardAndBackward(path)
 			elif rand_val == 1:
+				#INTERACTION SET P2P- Two people moving
 				points = getRandomPoints(room_points)
 				human = coppelia.create_human(points[0], points[1],0,0)
-				print("human_on_outskirts: " + str(coppelia.get_object_name(human.handle)))
-				around_room_list.append(human)
+				human2 = coppelia.create_human(points[0]-0.4, points[1]-0.4, 0, 0)
+				human.setDummyPosition(-0.4, 0.2, 0)
+				human2.setDummyPosition(-0.4, 0.2, 0)
+				following_humans_list.append(human)
+				following_humans_list.append(human2)
+				interactions_dict["Interaction" + str(count)] = 					(coppelia.get_object_name(human.handle), 						coppelia.get_object_name(human2.handle))
+				count += 1
+			elif rand_val == 2:
+				#INTERACTION SET P2O - CUP AND PERSON
+				#sitting person on chair with cup
+				points = getRandomPoints(room_points)
+				human = coppelia.create_model('models/people/Sitting Bill.ttm', points[0], 						points[1], 0, 0)
+				table_model = 'models/furniture/tables/customizable table.ttm'
+				chair_model = 'models/furniture/chairs/dining chair.ttm'
+				cup_model = 'models/household/cup.ttm'
+				#+0.5x to move away from chair and person
+				table = coppelia.create_model(table_model, points[0]+0.5, points[1], 0.7, 0)
+				#-0.4 so the person it sitting on the chair
+				chair = coppelia.create_model(chair_model, points[0]-0.4, points[1], 0.45, pi/2)
+				cup = coppelia.create_model(cup_model, points[0], points[1], 1.0, 0)
+				interactions_dict["Interaction" + str(count)] = 					(coppelia.get_object_name(human), coppelia.get_object_name(cup))
+				count += 1
 			else:
 				points = getRandomPoints(room_points)
 				human = coppelia.create_random_human(points[0], points[1], 0, 0)
-				print("random_human: " + str(coppelia.get_object_name(human.handle)))	
 
-	if not forward_backward_list and around_room_list:
+
+	if not forward_backward_list and following_humans_list:
 		forward_backward_list.append(1)
-	elif forward_backward_list and not around_room_list:
-		around_room_list.append(1)
-	elif not forward_backward_list and not around_room_list:
-		around_room_list.append(1)
+	elif forward_backward_list and not following_humans_list:
+		following_humans_list.append(1)
+	elif not forward_backward_list and not following_humans_list:
+		following_humans_list.append(1)
 		forward_backward_list.append(1)
-	return forward_backward_list, around_room_list
-			
+	return forward_backward_list, following_humans_list, interactions_dict
+
+def createObjects(room_points):
+	#one from distance
+	#one from far
+	#one general
+	object_list = []
+	rand_value = randint(0,5)
+	if rand_value > 0:
+		for x in range(rand_value):
+			rand_num = randint(0,2)
+			if rand_num == 0:
+				#tv
+				tv_model = 'models/office items/laptop.ttm'
+				points = getRandomPoints(room_points)
+				tv = coppelia.create_model(tv_model, points[0], points[1], 0, 0)
+				object_list.append(tv)
+			elif rand_num == 1:
+				#cupboard
+				cupboard_model = 'models/furniture/shelves-cupboards-racks/deep cupboard.ttm'
+				points = getRandomPoints(room_points)
+				cupboard = coppelia.create_model(cupboard_model, points[0], points[1], 0.95, 0)
+				object_list.append(cupboard)
+	return object_list
+	#random to get what to create
+	
+
 #create room_gen instance
 room_generator = RoomGenerator()
 #sets the points of the room gen at random
 room_generator.selectRoomAtRandom()
 #sets the human coordinates for movement
 point_pairs = populatePointPairs(room_generator.room_points)
-#create humans
 #get path based on pointpairs
 human_path = room_generator.setPath(point_pairs)
-print(human_path)
+#Generate the people for the rooms
 human_lists = createScenePeople(human_path, room_generator.room_points)
+createObjects(room_generator.room_points)
+#ensure the lists are not empty
 if human_lists[0] != 1 :
 	forward_backward_list = human_lists[0]
 if human_lists[1] != 1:
 	around_room_list = human_lists[1]
-#store initial values to json
-
+storeToJson(room_generator.room_points, human_lists[2])
 # Start the simulation
 coppelia.run_script('sim.setBoolParameter(sim.boolparam_realtime_simulation,true)')
 coppelia.start()
 coppelia.run_script('sim.setBoolParameter(sim.boolparam_realtime_simulation,true)')
-
+#set target position to random
+target_points = getRandomPoints(room_generator.room_points)
+#z set to 0.7357 as this is half the cuboid height, to ensure it is above ground
+target_object = coppelia.set_object_transform('Cuboid', target_points[0], target_points[1], 0.20, 0)
 last_10_seconds = time.time()-10	
 last_5_seconds = time.time()-10
 last_point_zero_one = time.time()-10
@@ -338,19 +405,25 @@ while True:
 		last_point_zero_one = time.time()
 		pygame.event.pump()
 		timestamp += 1
-		"""updates.append({
+		dict_human = getHumansDictionary()
+		updates.append({
 			"timestamp": timestamp,
 			"youbot_pose": coppelia.get_object_pose('youBot'),
-			"youbot_pos": coppelia.get_object_position('youBot'),
-			"human1_pos": coppelia.get_object_position('Bill#0'),
-			"human2_pos": coppelia.get_object_position('Bill#1')
-		})"""
+			"humans": dict_human
+		})
 		left = -20*pygame.joystick.Joystick(0).get_axis(0)
 		up = 20*pygame.joystick.Joystick(0).get_axis(1)
 		rot = 20*pygame.joystick.Joystick(0).get_axis(2)
 		youbot.set_velocity(up, left, rot)
-		if pygame.joystick.Joystick(0).get_button(0) == 1:
-			print("Exit button pressed, uploading data to new file...")
+		#get youbot and target pos
+		youbot_position = coppelia.get_object_position('youBot')
+		#convert to array for use in euclidean distance
+		youbot_position_arr = np.array((youbot_position[0], youbot_position[1], 0))
+		target_position = coppelia.get_object_position('Cuboid')
+		target_position_arr = np.array((target_position[0], target_position[1], 0))
+		distance_to_target = np.linalg.norm(youbot_position_arr-target_position_arr)
+		if pygame.joystick.Joystick(0).get_button(0) == 1 or distance_to_target < 0.4:
+			print("Exiting now, uploading data to new file...")
 			json_dictionary.update({
 			"updates": updates
 			})
