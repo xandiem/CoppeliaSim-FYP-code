@@ -5,14 +5,19 @@ This repository provides all the essentials to run and test this software. The i
 Setup:
 
 To run the software it requires the downloading of the CoppeliasSim robot simulator from here: https://www.coppeliarobotics.com/downloads
+
 From here it then requires changes to the .bashrc file. The path needs to be changed for the first line based on the file path
+
 The following lines need to be added:
 
 export COPPELIASIM_ROOT=/home/user/Downloads/CoppeliaSim-FYP-code-master
+
 alias coppeliasim="cd $COPPELIASIM_ROOT; bash coppeliaSim.sh"
+
 export B0_RESOLVER="tcp://127.0.0.1:22000"
 
 The following commands can be used to handle minor bugs in CoppeliaSim:
+
 cd $COPPELIASIM_ROOT
 
 sed -i 's/function LoadModel(/function LoadModelFromFile(/g' lua/b0RemoteApiServer.lua
@@ -20,11 +25,13 @@ sed -i 's/function LoadModel(/function LoadModelFromFile(/g' lua/b0RemoteApiServ
 rm libsimExtDynamicsVortex.so
 
 After this, the following can be added to run the API when CoppeliaSim is run, so do the following commands:
+
 cd $COPPELIASIM_ROOT
 
 mv lua/b0RemoteApiServer.lua simAddOnScript_b0RemoteApiServer.lua
 
 Once all of the previous has been undertaken. The code can now been run from a new terminal using:
+
 "coppeliasim"
 
 This will run the simulator and set it up.
