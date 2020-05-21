@@ -14,7 +14,9 @@ export B0_RESOLVER="tcp://127.0.0.1:22000"
 
 The following commands can be used to handle minor bugs in CoppeliaSim:
 cd $COPPELIASIM_ROOT
+
 sed -i 's/function LoadModel(/function LoadModelFromFile(/g' lua/b0RemoteApiServer.lua
+
 rm libsimExtDynamicsVortex.so
 
 After this, the following can be added to run the API when CoppeliaSim is run, so do the following commands:
