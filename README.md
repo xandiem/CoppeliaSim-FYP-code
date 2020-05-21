@@ -3,6 +3,7 @@ Final year project to create software capable of creating human aware navigation
 This repository provides all the essentials to run and test this software. The instructions only apply for running the software in Linux.
 
 Setup:
+
 To run the software it requires the downloading of the CoppeliasSim robot simulator from here: https://www.coppeliarobotics.com/downloads
 From here it then requires changes to the .bashrc file. The path needs to be changed for the first line based on the file path
 The following lines need to be added:
