@@ -33,6 +33,8 @@ cd Downloads
 cd CoppeliaSim-FYP-code-master
 
 Once inside the directory, now using the python version downloaded either "python3" or "python":
+
 "python3 fyp_code.py"
+
 Which should now produce a scenario in CoppeliaSim
 
