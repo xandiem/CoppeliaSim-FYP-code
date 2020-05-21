@@ -35,6 +35,7 @@ Once the simulator is running, we can now run the software. First open a new ter
 If in Downloads, the following commands would be used:
 
 cd Downloads
+
 cd CoppeliaSim-FYP-code-master
 
 Once inside the directory, now using the python version downloaded either "python3" or "python":
