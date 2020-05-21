@@ -19,16 +19,19 @@ rm libsimExtDynamicsVortex.so
 
 After this, the following can be added to run the API when CoppeliaSim is run, so do the following commands:
 cd $COPPELIASIM_ROOT
+
 mv lua/b0RemoteApiServer.lua simAddOnScript_b0RemoteApiServer.lua
 
 Once all of the previous has been undertaken. The code can now been run from a new terminal using:
 "coppeliasim"
+
 This will run the simulator and set it up.
 
 Running the software:
 
 Once the simulator is running, we can now run the software. First open a new terminal(ctrl+alt+c) and move to the directory downloaded.
 If in Downloads, the following commands would be used:
+
 cd Downloads
 cd CoppeliaSim-FYP-code-master
 
