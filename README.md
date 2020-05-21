@@ -16,6 +16,7 @@ alias coppeliasim="cd $COPPELIASIM_ROOT; bash coppeliaSim.sh"
 
 export B0_RESOLVER="tcp://127.0.0.1:22000"
 
+
 The following commands can be used to handle minor bugs in CoppeliaSim:
 
 cd $COPPELIASIM_ROOT
@@ -24,17 +25,21 @@ sed -i 's/function LoadModel(/function LoadModelFromFile(/g' lua/b0RemoteApiServ
 
 rm libsimExtDynamicsVortex.so
 
+
 After this, the following can be added to run the API when CoppeliaSim is run, so do the following commands:
 
 cd $COPPELIASIM_ROOT
 
 mv lua/b0RemoteApiServer.lua simAddOnScript_b0RemoteApiServer.lua
 
+
 Once all of the previous has been undertaken. The code can now been run from a new terminal using:
 
 "coppeliasim"
 
+
 This will run the simulator and set it up.
+
 
 Running the software:
 
@@ -45,9 +50,11 @@ cd Downloads
 
 cd CoppeliaSim-FYP-code-master
 
+
 Once inside the directory, now using the python version downloaded either "python3" or "python":
 
 "python3 fyp_code.py"
+
 
 Which should now produce a scenario in CoppeliaSim
 
