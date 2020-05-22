@@ -43,7 +43,7 @@ This will run the simulator and set it up.
 
 Running the software:
 
-Once the simulator is running, we can now run the software. First open a new terminal(ctrl+alt+c) and move to the directory downloaded.
+Once the simulator is running, we can now run the software. First open a new terminal(ctrl+shift+c) and move to the directory downloaded.
 If in Downloads, the following commands would be used:
 
 cd Downloads
